@@ -1,9 +1,9 @@
 // app/api/socketio/route.ts
-import { NextApiResponseServerIO } from '@/types/next';
-import { Server as NetServer } from 'http'; 
-import { Server as ServerIO } from 'socket.io';
-
- 
+import { NextResponse } from 'next/server';
+import { Server as NetServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import type { NextApiRequest } from 'next';
+import type { Socket as NetSocket } from 'net';
 
 interface Message {
   id: string;
@@ -14,11 +14,19 @@ interface Message {
 
 const rooms: { [key: string]: { users: Set<string>; messages: Message[] } } = {};
 
-const ioHandler = ( res: NextApiResponseServerIO) => {
-  if (!res.socket.server.io) {
-    const httpServer: NetServer = res.socket.server as any;
-    const io = new ServerIO(httpServer, {
+export async function GET(req: NextApiRequest) {
+  if ((await initSocketIO(req)) instanceof Error) {
+    return NextResponse.error();
+  }
+  return NextResponse.json({ success: true });
+}
+
+async function initSocketIO(req: NextApiRequest) {
+  if (!((req.socket as any).server as any).io) {
+    const httpServer: NetServer = (req.socket as any).server as any;
+    const io = new SocketIOServer(httpServer, {
       path: '/api/socketio',
+      addTrailingSlash: false,
     });
 
     io.on('connection', (socket) => {
@@ -67,11 +75,9 @@ const ioHandler = ( res: NextApiResponseServerIO) => {
       });
     });
 
-    res.socket.server.io = io;
+    ((req.socket as any).server as any).io = io;
   }
-  res.end();
-};
+  return ((req.socket as any).server as any).io;
+}
 
-export { ioHandler as GET, ioHandler as POST };
 export const dynamic = 'force-dynamic';
-// types/next.d.ts
