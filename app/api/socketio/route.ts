@@ -56,11 +56,12 @@ async function initSocketIO(request: Request) {
       path: '/api/socketio',
       addTrailingSlash: false,
       cors: {
-        origin: process.env.SITE_URL || "http://localhost:3000",
+        origin: process.env.SITE_URL || "http://localhost:3000" || "https://io-server-omega.vercel.app/",
         methods: ["GET", "POST"],
         credentials: true
       }
     });
+    
 
     io.on('connection', (socket) => {
       console.log('A user connected');
