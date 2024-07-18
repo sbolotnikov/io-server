@@ -1,7 +1,6 @@
 // app/api/socketio/route.ts
 import { NextApiResponseServerIO } from '@/types/next';
-import { Server as NetServer } from 'http';
-import { NextApiRequest } from 'next';
+import { Server as NetServer } from 'http'; 
 import { Server as ServerIO } from 'socket.io';
 
  
@@ -15,7 +14,7 @@ interface Message {
 
 const rooms: { [key: string]: { users: Set<string>; messages: Message[] } } = {};
 
-const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
+const ioHandler = ( res: NextApiResponseServerIO) => {
   if (!res.socket.server.io) {
     const httpServer: NetServer = res.socket.server as any;
     const io = new ServerIO(httpServer, {
