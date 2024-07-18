@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import type { Socket as NetSocket } from 'net';
+import Cors from 'cors';
 
 interface Message {
   id: string;
@@ -13,10 +13,33 @@ interface Message {
 
 const rooms: { [key: string]: { users: Set<string>; messages: Message[] } } = {};
 
+// Helper method to wait for a middleware to execute before continuing
+// And to throw an error when an error happens in a middleware
+function runMiddleware(req: Request, res: NextResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
+
+// Initialize the cors middleware
+const cors = Cors({
+  methods: ['GET', 'HEAD'],
+});
+
 export async function GET(request: Request) {
-  const res = await initSocketIO(request);
-  if (res instanceof Error) {
-    return NextResponse.json({ error: res.message }, { status: 500 });
+  const res = NextResponse.next();
+  
+  // Run the cors middleware
+  await runMiddleware(request, res, cors);
+
+  const socketRes = await initSocketIO(request);
+  if (socketRes instanceof Error) {
+    return NextResponse.json({ error: socketRes.message }, { status: 500 });
   }
   return NextResponse.json({ success: true });
 }
@@ -32,6 +55,11 @@ async function initSocketIO(request: Request) {
     const io = new SocketIOServer(httpServer, {
       path: '/api/socketio',
       addTrailingSlash: false,
+      cors: {
+        origin: process.env.SITE_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+      }
     });
 
     io.on('connection', (socket) => {
