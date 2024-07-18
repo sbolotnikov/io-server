@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 interface Message {
@@ -20,16 +20,16 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io('https://io-server-omega.vercel.app', {
+    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'https://io-server-omega.vercel.app', {
       path: '/api/socketio',
-      transports: ['websocket'], // Force WebSocket transport
-      withCredentials: true, // This is important for CORS
+      transports: ['websocket'],
+      withCredentials: true,
     });
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
       setIsConnected(true);
-      setUserId( "id_Vasya");
+      setUserId("id_" + Math.random().toString(36).substr(2, 9));
     });
 
     newSocket.on('connect_error', (error) => {
@@ -62,14 +62,14 @@ export default function Home() {
     };
   }, []);
 
-  const joinRoom = () => {
+  const joinRoom = useCallback(() => {
     if (socket && roomId && codeword) {
       socket.emit('join room', { roomId, codeword });
     }
-  };
+  }, [socket, roomId, codeword]);
 
-  const sendMessage = () => {
-    if (socket && inputMessage) {
+  const sendMessage = useCallback(() => {
+    if (socket && inputMessage && userId) {
       const message: Message = {
         id: Date.now().toString(),
         userId,
@@ -79,7 +79,7 @@ export default function Home() {
       socket.emit('send message', message);
       setInputMessage('');
     }
-  };
+  }, [socket, inputMessage, userId]);
 
   return (
     <div className="container mx-auto p-4">
@@ -116,6 +116,7 @@ export default function Home() {
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Type a message..."
           className="border p-2 flex-grow mr-2"
         />
@@ -129,4 +130,3 @@ export default function Home() {
     </div>
   );
 }
- 
