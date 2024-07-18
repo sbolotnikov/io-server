@@ -78,5 +78,5 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 };
 
 export { ioHandler as GET, ioHandler as POST };
-
+export const dynamic = 'force-dynamic';
 // types/next.d.ts
